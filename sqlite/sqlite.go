@@ -35,8 +35,8 @@ import (
 	"os"
 	"reflect"
 	"strconv"
-	"unsafe"
 	"time"
+	"unsafe"
 )
 
 type Errno int
@@ -275,31 +275,36 @@ func (s *Stmt) Exec(args ...interface{}) error {
 
 	for i, v := range args {
 		var str string
-		switch v := v.(type) {
-		case []byte:
-			var p *byte
-			if len(v) > 0 {
-				p = &v[0]
-			}
-			if rv := C.my_bind_blob(s.stmt, C.int(i+1), unsafe.Pointer(p), C.int(len(v))); rv != 0 {
-				return s.c.error(rv)
-			}
-			continue
+		var rv C.int
+		if v == nil {
+			rv = C.sqlite3_bind_null(s.stmt, C.int(i+1))
+		} else {
+			switch v := v.(type) {
+			case []byte:
+				var p *byte
+				if len(v) > 0 {
+					p = &v[0]
+				}
+				if rv := C.my_bind_blob(s.stmt, C.int(i+1), unsafe.Pointer(p), C.int(len(v))); rv != 0 {
+					return s.c.error(rv)
+				}
+				continue
 
-		case bool:
-			if v {
-				str = "1"
-			} else {
-				str = "0"
+			case bool:
+				if v {
+					str = "1"
+				} else {
+					str = "0"
+				}
+
+			default:
+				str = fmt.Sprint(v)
 			}
 
-		default:
-			str = fmt.Sprint(v)
+			cstr := C.CString(str)
+			rv = C.my_bind_text(s.stmt, C.int(i+1), cstr, C.int(len(str)))
+			C.free(unsafe.Pointer(cstr))
 		}
-
-		cstr := C.CString(str)
-		rv := C.my_bind_text(s.stmt, C.int(i+1), cstr, C.int(len(str)))
-		C.free(unsafe.Pointer(cstr))
 		if rv != 0 {
 			return s.c.error(rv)
 		}
