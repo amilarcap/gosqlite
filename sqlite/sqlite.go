@@ -6,7 +6,8 @@
 package sqlite
 
 /*
-#cgo LDFLAGS: -lsqlite3
+#cgo CFLAGS: -I/home/gmiller/root/include
+#cgo LDFLAGS: -L/home/gmiller/root/lib -lsqlite3
 
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -241,7 +242,7 @@ type Stmt struct {
 	c    *Conn
 	stmt *C.sqlite3_stmt
 	err  error
-	t0   int64
+	t0   time.Time
 	sql  string
 	args string
 }
@@ -385,7 +386,7 @@ func (s *Stmt) SQL() string {
 	return s.sql + s.args
 }
 
-func (s *Stmt) Nanoseconds() int64 {
+func (s *Stmt) Nanoseconds() time.Duration {
 	return time.Now().Sub(s.t0)
 }
 
