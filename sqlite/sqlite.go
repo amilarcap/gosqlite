@@ -188,7 +188,7 @@ func (b *Backup) Status() BackupStatus {
 	return BackupStatus{int(C.sqlite3_backup_remaining(b.sb)), int(C.sqlite3_backup_pagecount(b.sb))}
 }
 
-func (b *Backup) Run(npage int, sleepNs int64, c chan<- BackupStatus) error {
+func (b *Backup) Run(npage int, sleep time.Duration, c chan<- BackupStatus) error {
 	var err error
 	for {
 		err = b.Step(npage)
@@ -198,7 +198,7 @@ func (b *Backup) Run(npage int, sleepNs int64, c chan<- BackupStatus) error {
 		if c != nil {
 			c <- b.Status()
 		}
-		time.Sleep(sleepNs)
+		time.Sleep(sleep)
 	}
 	return b.dst.error(C.sqlite3_errcode(b.dst.db))
 }
@@ -258,7 +258,7 @@ func (c *Conn) Prepare(cmd string) (*Stmt, error) {
 	if rv != 0 {
 		return nil, c.error(rv)
 	}
-	return &Stmt{c: c, stmt: stmt, sql: cmd, t0: time.Nanoseconds()}, nil
+	return &Stmt{c: c, stmt: stmt, sql: cmd, t0: time.Now()}, nil
 }
 
 func (s *Stmt) Exec(args ...interface{}) error {
@@ -363,13 +363,13 @@ func (s *Stmt) Scan(args ...interface{}) error {
 			}
 			*v = x
 		case *int64:
-			x, err := strconv.Atoi64(string(data))
+			x, err := strconv.ParseInt(string(data), 10, 64)
 			if err != nil {
 				return errors.New("arg " + strconv.Itoa(i) + " as int64: " + err.Error())
 			}
 			*v = x
 		case *float64:
-			x, err := strconv.Atof64(string(data))
+			x, err := strconv.ParseFloat(string(data), 64)
 			if err != nil {
 				return errors.New("arg " + strconv.Itoa(i) + " as float64: " + err.Error())
 			}
@@ -386,7 +386,7 @@ func (s *Stmt) SQL() string {
 }
 
 func (s *Stmt) Nanoseconds() int64 {
-	return time.Nanoseconds() - s.t0
+	return time.Now().Sub(s.t0)
 }
 
 func (s *Stmt) Finalize() error {
