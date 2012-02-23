@@ -255,6 +255,9 @@ func (c *Conn) Prepare(cmd string) (*Stmt, error) {
 	defer C.free(unsafe.Pointer(cmdstr))
 	var stmt *C.sqlite3_stmt
 	var tail *C.char
+	// the next line causes a compiler warning because the last
+	// argument should be "const char **" but there is no way
+	// to express const-ness to CGO
 	rv := C.sqlite3_prepare_v2(c.db, cmdstr, C.int(len(cmd)+1), &stmt, &tail)
 	if rv != 0 {
 		return nil, c.error(rv)
@@ -341,42 +344,63 @@ func (s *Stmt) Scan(args ...interface{}) error {
 	}
 
 	for i, v := range args {
-		n := C.sqlite3_column_bytes(s.stmt, C.int(i))
-		p := C.sqlite3_column_blob(s.stmt, C.int(i))
-		if p == nil && n > 0 {
-			return errors.New("got nil blob")
-		}
-		var data []byte
-		if n > 0 {
-			data = (*[1 << 30]byte)(unsafe.Pointer(p))[0:n]
-		}
-		switch v := v.(type) {
-		case *[]byte:
-			*v = data
-		case *string:
-			*v = string(data)
-		case *bool:
-			*v = string(data) == "1"
-		case *int:
-			x, err := strconv.Atoi(string(data))
-			if err != nil {
-				return errors.New("arg " + strconv.Itoa(i) + " as int: " + err.Error())
+		if C.sqlite3_column_type(s.stmt, C.int(i)) == C.SQLITE_NULL {
+			switch v := v.(type) {
+			case *[]byte:
+				*v = nil
+			case *string:
+				*v = ""
+			case *bool:
+				*v = false
+			case *int:
+				*v = 0
+			case *int64:
+				*v = 0
+			case *float64:
+				*v = 0.0
+			default:
+				return errors.New("unsupported type in Scan: " + reflect.TypeOf(v).String())
 			}
-			*v = x
-		case *int64:
-			x, err := strconv.ParseInt(string(data), 10, 64)
-			if err != nil {
-				return errors.New("arg " + strconv.Itoa(i) + " as int64: " + err.Error())
+			
+		} else {
+
+			n := C.sqlite3_column_bytes(s.stmt, C.int(i))
+			p := C.sqlite3_column_blob(s.stmt, C.int(i))
+			if p == nil && n > 0 {
+				return errors.New("got nil blob")
 			}
-			*v = x
-		case *float64:
-			x, err := strconv.ParseFloat(string(data), 64)
-			if err != nil {
-				return errors.New("arg " + strconv.Itoa(i) + " as float64: " + err.Error())
+			var data []byte
+			if n > 0 {
+				data = (*[1 << 30]byte)(unsafe.Pointer(p))[0:n]
 			}
-			*v = x
-		default:
-			return errors.New("unsupported type in Scan: " + reflect.TypeOf(v).String())
+			switch v := v.(type) {
+			case *[]byte:
+				*v = data
+			case *string:
+				*v = string(data)
+			case *bool:
+				*v = string(data) == "1"
+			case *int:
+				x, err := strconv.Atoi(string(data))
+				if err != nil {
+					return errors.New("arg " + strconv.Itoa(i) + " as int: " + err.Error())
+				}
+				*v = x
+			case *int64:
+				x, err := strconv.ParseInt(string(data), 10, 64)
+				if err != nil {
+					return errors.New("arg " + strconv.Itoa(i) + " as int64: " + err.Error())
+				}
+				*v = x
+			case *float64:
+				x, err := strconv.ParseFloat(string(data), 64)
+				if err != nil {
+					return errors.New("arg " + strconv.Itoa(i) + " as float64: " + err.Error())
+				}
+				*v = x
+			default:
+				return errors.New("unsupported type in Scan: " + reflect.TypeOf(v).String())
+			}
 		}
 	}
 	return nil
