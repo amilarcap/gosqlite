@@ -33,7 +33,6 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -206,7 +205,7 @@ func (b *Backup) Run(npage int, sleep time.Duration, c chan<- BackupStatus) erro
 
 func (b *Backup) Close() error {
 	if b.sb == nil {
-		return os.EINVAL
+		return errors.New("nil backup")
 	}
 	C.sqlite3_backup_finish(b.sb)
 	b.sb = nil
