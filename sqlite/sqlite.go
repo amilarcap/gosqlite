@@ -355,6 +355,10 @@ func (s *Stmt) Scan(args ...interface{}) error {
 				*v = 0
 			case *int64:
 				*v = 0
+			case *uint64:
+				*v = 0
+			case *uint32:
+				*v = 0
 			case *float64:
 				*v = 0.0
 			default:
@@ -391,12 +395,25 @@ func (s *Stmt) Scan(args ...interface{}) error {
 					return errors.New("arg " + strconv.Itoa(i) + " as int64: " + err.Error())
 				}
 				*v = x
+			case *uint64:
+				x, err := strconv.ParseUint(string(data), 10, 64)
+				if err != nil {
+					return errors.New("arg " + strconv.Itoa(i) + " as int64: " + err.Error())
+				}
+				*v = x
+			case *uint32:
+				x, err := strconv.ParseUint(string(data), 10, 32)
+				if err != nil {
+					return errors.New("arg " + strconv.Itoa(i) + " as int64: " + err.Error())
+				}
+				*v = uint32(x)
 			case *float64:
 				x, err := strconv.ParseFloat(string(data), 64)
 				if err != nil {
 					return errors.New("arg " + strconv.Itoa(i) + " as float64: " + err.Error())
 				}
 				*v = x
+				
 			default:
 				return errors.New("unsupported type in Scan: " + reflect.TypeOf(v).String())
 			}
