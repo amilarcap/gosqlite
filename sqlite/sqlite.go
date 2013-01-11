@@ -426,7 +426,7 @@ func (s *Stmt) SQL() string {
 	return s.sql + s.args
 }
 
-func (s *Stmt) Nanoseconds() time.Duration {
+func (s *Stmt) Nanoseconds() int64 {
 	return time.Now().Sub(s.t0).Nanoseconds()
 }
 
