@@ -427,7 +427,7 @@ func (s *Stmt) SQL() string {
 }
 
 func (s *Stmt) Nanoseconds() time.Duration {
-	return time.Now().Sub(s.t0)
+	return time.Now().Sub(s.t0).Nanoseconds()
 }
 
 func (s *Stmt) Finalize() error {
