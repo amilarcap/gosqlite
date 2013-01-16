@@ -425,11 +425,19 @@ func (s *Stmt) Scan(args ...interface{}) error {
 	return nil
 }
 
+func (s *Stmt) NumColumns() int {
+	return int(C.sqlite3_column_count(s.stmt))
+}
+
+func (s *Stmt) ColumnName(n int) string {
+	return C.GoString(C.sqlite3_column_name(s.stmt, C.int(n)))
+}
+
 func (s *Stmt) SQL() string {
 	return s.sql + s.args
 }
 
-func (s *Stmt) Nanoseconds() time.Duration {
+func (s *Stmt) Nanoseconds() int64 {
 	return time.Now().Sub(s.t0).Nanoseconds()
 }
 
