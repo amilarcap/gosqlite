@@ -6,8 +6,7 @@
 package sqlite
 
 /*
-#cgo CFLAGS: -I/home/gmiller/root/include
-#cgo LDFLAGS: -L/home/gmiller/root/lib -lsqlite3
+#cgo pkg-config: sqlite3
 
 #include <sqlite3.h>
 #include <stdlib.h>
