@@ -367,7 +367,7 @@ func (s *Stmt) Scan(args ...interface{}) error {
 			default:
 				return errors.New("unsupported type in Scan: " + reflect.TypeOf(v).String())
 			}
-			
+
 		} else {
 
 			n := C.sqlite3_column_bytes(s.stmt, C.int(i))
@@ -416,7 +416,7 @@ func (s *Stmt) Scan(args ...interface{}) error {
 					return errors.New("arg " + strconv.Itoa(i) + " as float64: " + err.Error())
 				}
 				*v = x
-				
+
 			default:
 				return errors.New("unsupported type in Scan: " + reflect.TypeOf(v).String())
 			}
