@@ -126,6 +126,10 @@ type Conn struct {
 	db *C.sqlite3
 }
 
+func (c *Conn) C() uintptr {
+	return uintptr(unsafe.Pointer(c.db))
+}
+
 func Version() string {
 	p := C.sqlite3_libversion()
 	return C.GoString(p)
