@@ -40,6 +40,17 @@ import (
 
 type Errno int
 
+type ColType int
+
+const (
+	Unknown = ColType(iota)
+	Integer
+	Float
+	Text
+	Blob
+	Null
+)
+
 func (e Errno) Error() string {
 	s := errText[e]
 	if s == "" {
@@ -431,6 +442,22 @@ func (s *Stmt) NumColumns() int {
 
 func (s *Stmt) ColumnName(n int) string {
 	return C.GoString(C.sqlite3_column_name(s.stmt, C.int(n)))
+}
+
+func (s *Stmt) ColumnType(n int) ColType {
+	switch C.sqlite3_column_type(s.stmt, C.int(n)) {
+	case C.SQLITE_INTEGER:
+		return Integer
+	case C.SQLITE_FLOAT:
+		return Float
+	case C.SQLITE_BLOB:
+		return Blob
+	case C.SQLITE_NULL:
+		return Null
+	case C.SQLITE_TEXT:
+		return Text
+	}
+	return Unknown
 }
 
 func (s *Stmt) SQL() string {
