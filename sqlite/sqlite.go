@@ -141,6 +141,15 @@ var errText = map[Errno]string{
 	101: "sqlite3_step() has finished executing",
 }
 
+const (
+	ISO8601 = "2006-01-02 15:04:05.000"
+)
+
+type NullTime struct {
+	Time  time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
+
 func (c *Conn) error(rv C.int) error {
 	if c == nil || c.db == nil {
 		return errors.New("nil sqlite database")
@@ -337,7 +346,17 @@ func (s *Stmt) Exec(args ...interface{}) error {
 				} else {
 					str = "0"
 				}
-
+			case time.Time:
+				str = v.Format(ISO8601)
+			case NullTime:
+				if v.Valid {
+					str = v.Time.Format(ISO8601)
+				} else {
+					if rv := C.sqlite3_bind_null(s.stmt, C.int(i+1)); rv != 0 {
+						return s.c.error(rv)
+					}
+					continue
+				}
 			default:
 				str = fmt.Sprint(v)
 			}
@@ -399,6 +418,8 @@ func (s *Stmt) Scan(args ...interface{}) error {
 				*v = 0
 			case *float64:
 				*v = 0.0
+			case *NullTime:
+				*v = NullTime{Valid: false}
 			default:
 				return errors.New("unsupported type in Scan: " + reflect.TypeOf(v).String())
 			}
@@ -449,6 +470,18 @@ func (s *Stmt) Scan(args ...interface{}) error {
 				x, err := strconv.ParseFloat(string(data), 64)
 				if err != nil {
 					return errors.New("arg " + strconv.Itoa(i) + " as float64: " + err.Error())
+				}
+				*v = x
+			case *NullTime:
+				x, err := time.Parse(ISO8601, string(data))
+				if err != nil {
+					return errors.New("arg " + strconv.Itoa(i) + " as time: " + err.Error())
+				}
+				*v = NullTime{Time: x, Valid: true}
+			case *time.Time:
+				x, err := time.Parse(ISO8601, string(data))
+				if err != nil {
+					return errors.New("arg " + strconv.Itoa(i) + " as time: " + err.Error())
 				}
 				*v = x
 
