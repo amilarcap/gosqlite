@@ -88,6 +88,28 @@ var (
 	Done                = Errno(101) //   /* sqlite3_step() has finished executing */
 )
 
+const (
+	OpenReadonly      = C.SQLITE_OPEN_READONLY
+	OpenReadwrite     = C.SQLITE_OPEN_READWRITE
+	OpenCreate        = C.SQLITE_OPEN_CREATE
+	OpenDeleteonclose = C.SQLITE_OPEN_DELETEONCLOSE
+	OpenExclusive     = C.SQLITE_OPEN_EXCLUSIVE
+	OpenAutoproxy     = C.SQLITE_OPEN_AUTOPROXY
+	OpenUri           = C.SQLITE_OPEN_URI
+	OpenMainDb        = C.SQLITE_OPEN_MAIN_DB
+	OpenTempDb        = C.SQLITE_OPEN_TEMP_DB
+	OpenTransientDb   = C.SQLITE_OPEN_TRANSIENT_DB
+	OpenMainJournal   = C.SQLITE_OPEN_MAIN_JOURNAL
+	OpenTempJournal   = C.SQLITE_OPEN_TEMP_JOURNAL
+	OpenSubjournal    = C.SQLITE_OPEN_SUBJOURNAL
+	OpenMasterJournal = C.SQLITE_OPEN_MASTER_JOURNAL
+	OpenNomutex       = C.SQLITE_OPEN_NOMUTEX
+	OpenFullmutex     = C.SQLITE_OPEN_FULLMUTEX
+	OpenSharedcache   = C.SQLITE_OPEN_SHAREDCACHE
+	OpenPrivatecache  = C.SQLITE_OPEN_PRIVATECACHE
+	OpenWal           = C.SQLITE_OPEN_WAL
+)
+
 var errText = map[Errno]string{
 	1:   "SQL error or missing database",
 	2:   "Internal logic error in SQLite",
@@ -146,6 +168,10 @@ func Version() string {
 }
 
 func Open(filename string) (*Conn, error) {
+	return OpenV2(filename, OpenFullmutex|OpenReadwrite|OpenCreate)
+}
+func OpenV2(filename string, flags int) (*Conn, error) {
+
 	if C.sqlite3_threadsafe() == 0 {
 		return nil, errors.New("sqlite library was not compiled for thread-safe operation")
 	}
@@ -154,9 +180,7 @@ func Open(filename string) (*Conn, error) {
 	name := C.CString(filename)
 	defer C.free(unsafe.Pointer(name))
 	rv := C.sqlite3_open_v2(name, &db,
-		C.SQLITE_OPEN_FULLMUTEX|
-			C.SQLITE_OPEN_READWRITE|
-			C.SQLITE_OPEN_CREATE,
+		C.int(flags),
 		nil)
 	if rv != 0 {
 		return nil, Errno(rv)
