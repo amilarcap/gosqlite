@@ -347,7 +347,7 @@ func (s *Stmt) Exec(args ...interface{}) error {
 					str = "0"
 				}
 			case time.Time:
-				str = v.Format(ISO8601)
+				str = v.In(time.UTC).Format(ISO8601)
 			case NullTime:
 				if v.Valid {
 					str = v.Time.Format(ISO8601)
