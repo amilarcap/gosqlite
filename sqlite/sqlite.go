@@ -167,6 +167,10 @@ type Conn struct {
 	db *C.sqlite3
 }
 
+func (c *Conn) LastInsertRowid() int64 {
+    return int64(C.sqlite3_last_insert_rowid(c.db))
+}
+
 func (c *Conn) C() uintptr {
 	return uintptr(unsafe.Pointer(c.db))
 }
